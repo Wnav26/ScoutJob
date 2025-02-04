@@ -87,7 +87,8 @@ public class UserController {
     public ResponseEntity<ResultPaginationDTO> getAllUser(
             @Filter Specification<User> spec, Pageable pageable) {
 
-        return ResponseEntity.ok(this.userService.getAllUsers(spec, pageable));
+        return ResponseEntity.status(HttpStatus.OK).body(
+                this.userService.getAllUsers(spec, pageable));
     }
 
     @PutMapping("/users")
