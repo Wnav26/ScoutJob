@@ -1,25 +1,22 @@
-package vn.hoidanit.jobhunter.domain.dto;
+package vn.hoidanit.jobhunter.domain.response;
 
 import java.time.Instant;
 
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import vn.hoidanit.jobhunter.util.constant.GenderEnum;
 
 @Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
-public class ResUserDTO {
+public class ResCreateUserDTO {
     private long id;
     private String email;
     private String name;
+    private int age;
     private GenderEnum gender;
     private String address;
-    private int age;
-    private Instant updatedAt;
+    // @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss a", timezone = "GMT+7")
     private Instant createdAt;
-
 }
