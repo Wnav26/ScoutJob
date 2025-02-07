@@ -6,21 +6,22 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
 
 import vn.hoidanit.jobhunter.domain.Company;
 import vn.hoidanit.jobhunter.domain.User;
 import vn.hoidanit.jobhunter.domain.response.ResultPaginationDTO;
 import vn.hoidanit.jobhunter.repository.CompanyRepository;
+import vn.hoidanit.jobhunter.repository.UserRepository;
 
 @Service
 public class CompanyService {
     private final CompanyRepository companyRepository;
+    private final UserRepository userRepository;
 
-    public CompanyService(CompanyRepository companyRepository) {
+    public CompanyService(CompanyRepository companyRepository, UserRepository userRepository) {
         this.companyRepository = companyRepository;
+        this.userRepository = userRepository;
     }
 
     public Company handleSaveCompany(Company company) {
@@ -29,6 +30,14 @@ public class CompanyService {
     }
 
     public void deleteCompanyById(long id) {
+
+        Optional<Company> comOptional = this.companyRepository.findById(id);
+        if (comOptional.isPresent()) {
+            Company com = comOptional.get();
+            // fetch all user belong to this company
+            List<User> users = this.userRepository.findByCompany(com);
+            this.userRepository.deleteAll(users);
+        }
 
         this.companyRepository.deleteById(id);
     }
@@ -48,26 +57,20 @@ public class CompanyService {
         return rs;
     }
 
-    public Company getCompanyById(long id) {
-        Optional<Company> companyOptional = this.companyRepository.findById(id);
-        if (companyOptional.isPresent()) {
-            return companyOptional.get();
-        }
-        return null;
+    public Optional<Company> getCompanyById(long id) {
+        return this.companyRepository.findById(id);
     }
 
-    public Company handleUpdateCompany(Company reqCompany) {
-        Company wnav = this.getCompanyById(reqCompany.getId());
-        if (wnav != null) {
-            wnav.setName(reqCompany.getName());
-            wnav.setAddress(reqCompany.getAddress());
-            wnav.setDescription(reqCompany.getDescription());
-            wnav.setLogo(reqCompany.getLogo());
-            wnav.setUpdatedAt(reqCompany.getUpdatedAt());
-            wnav.setUpdatedBy(reqCompany.getUpdatedBy());
-            wnav = this.companyRepository.save(wnav);
-
+    public Company handleUpdateCompany(Company c) {
+        Optional<Company> companyOptional = this.companyRepository.findById(c.getId());
+        if (companyOptional.isPresent()) {
+            Company currentCompany = companyOptional.get();
+            currentCompany.setLogo(c.getLogo());
+            currentCompany.setName(c.getName());
+            currentCompany.setDescription(c.getDescription());
+            currentCompany.setAddress(c.getAddress());
+            return this.companyRepository.save(currentCompany);
         }
-        return wnav;
+        return null;
     }
 }
