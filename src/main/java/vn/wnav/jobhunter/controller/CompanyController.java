@@ -22,6 +22,7 @@ import com.turkraft.springfilter.boot.Filter;
 
 import jakarta.validation.Valid;
 import vn.wnav.jobhunter.domain.Company;
+import vn.wnav.jobhunter.domain.Job;
 import vn.wnav.jobhunter.domain.User;
 import vn.wnav.jobhunter.domain.response.ResultPaginationDTO;
 import vn.wnav.jobhunter.service.CompanyService;
@@ -48,9 +49,13 @@ public class CompanyController {
     @DeleteMapping("/companies/{id}")
     @ApiMessage("delete company")
 
-    public ResponseEntity<String> deleteCompanyById(@PathVariable("id") long id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") long id) throws IdInvalidException {
+        Optional<Company> currentComp = this.companyService.getCompanyById(id);
+        if (!currentComp.isPresent()) {
+            throw new IdInvalidException("Company not found");
+        }
         this.companyService.deleteCompanyById(id);
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok().body(null);
     }
 
     @GetMapping("/companies")

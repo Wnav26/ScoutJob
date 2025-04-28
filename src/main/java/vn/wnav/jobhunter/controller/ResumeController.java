@@ -21,6 +21,8 @@ import com.turkraft.springfilter.boot.Filter;
 import com.turkraft.springfilter.builder.FilterBuilder;
 import com.turkraft.springfilter.converter.FilterSpecificationConverter;
 
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.validation.Valid;
 import vn.wnav.jobhunter.domain.Company;
 import vn.wnav.jobhunter.domain.Job;
@@ -129,13 +131,20 @@ public class ResumeController {
                 }
             }
         }
-
-        Specification<Resume> jobInSpec = filterSpecificationConverter.convert(filterBuilder.field("job")
-                .in(filterBuilder.input(arrJobIds)).get());
-
+        // Specification<Resume> jobInSpec =
+        // filterSpecificationConverter.convert(filterBuilder.field("job")
+        // .in(filterBuilder.input(arrJobIds)).get());
+        Specification<Resume> jobInSpec = this.resumeService.hasJobIdsIn(arrJobIds);
         Specification<Resume> finalSpec = jobInSpec.and(spec);
 
-        return ResponseEntity.ok().body(this.resumeService.fetchAllResume(finalSpec, pageable));
+        ResultPaginationDTO resume;
+        if (currentUser.getName().equals("I'm super admin")) {
+            resume = this.resumeService.fetchAllResume(spec, pageable);
+        } else {
+            resume = this.resumeService.fetchAllResume(finalSpec, pageable);
+        }
+
+        return ResponseEntity.ok().body(resume);
     }
 
     @PostMapping("/resumes/by-user")

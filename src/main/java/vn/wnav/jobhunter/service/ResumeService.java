@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.mail.MailException;
 import org.springframework.stereotype.Service;
 
 import com.turkraft.springfilter.builder.FilterBuilder;
@@ -16,6 +17,8 @@ import com.turkraft.springfilter.converter.FilterSpecificationConverter;
 import com.turkraft.springfilter.parser.FilterParser;
 import com.turkraft.springfilter.parser.node.FilterNode;
 
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import vn.wnav.jobhunter.domain.Job;
 import vn.wnav.jobhunter.domain.Resume;
 import vn.wnav.jobhunter.domain.User;
@@ -41,14 +44,17 @@ public class ResumeService {
     private final ResumeRepository resumeRepository;
     private final UserRepository userRepository;
     private final JobRepository jobRepository;
+    private final EmailService emailService;
 
     public ResumeService(
             ResumeRepository resumeRepository,
             UserRepository userRepository,
-            JobRepository jobRepository) {
+            JobRepository jobRepository,
+            EmailService emailService) {
         this.resumeRepository = resumeRepository;
         this.userRepository = userRepository;
         this.jobRepository = jobRepository;
+        this.emailService = emailService;
     }
 
     public Optional<Resume> fetchById(long id) {
@@ -86,6 +92,22 @@ public class ResumeService {
 
     public ResUpdateResumeDTO update(Resume resume) {
         resume = this.resumeRepository.save(resume);
+
+        // Kiểm tra nếu trạng thái hồ sơ đã thay đổi
+        // Gửi email thông báo cho người dùng về trạng thái mới của hồ sơ
+        try {
+            String subject = "Thông báo: Cập nhật trạng thái hồ sơ của bạn";
+            String content = "Hồ sơ của bạn cho job " + resume.getJob().getName()
+                    + " của công ty " + resume.getJob().getCompany().getName()
+                    + " đã được cập nhật trạng thái thành: " + resume.getStatus();
+            String recipientEmail = resume.getEmail(); // Lấy email từ hồ sơ
+
+            // Gửi email thông qua EmailService
+            this.emailService.sendEmailSync(recipientEmail, subject, content, false, true);
+        } catch (MailException e) {
+            System.out.println("Lỗi khi gửi email: " + e.getMessage());
+        }
+
         ResUpdateResumeDTO res = new ResUpdateResumeDTO();
         res.setUpdatedAt(resume.getUpdatedAt());
         res.setUpdatedBy(resume.getUpdatedBy());
@@ -168,5 +190,12 @@ public class ResumeService {
         rs.setResult(listResume);
 
         return rs;
+    }
+
+    public static Specification<Resume> hasJobIdsIn(List<Long> jobIds) {
+        return (root, query, criteriaBuilder) -> {
+            Join<Resume, Job> jobJoin = root.join("job", JoinType.INNER);
+            return jobJoin.get("id").in(jobIds);
+        };
     }
 }

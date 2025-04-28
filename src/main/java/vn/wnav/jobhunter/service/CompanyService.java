@@ -9,19 +9,26 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import vn.wnav.jobhunter.domain.Company;
+import vn.wnav.jobhunter.domain.Job;
 import vn.wnav.jobhunter.domain.User;
 import vn.wnav.jobhunter.domain.response.ResultPaginationDTO;
 import vn.wnav.jobhunter.repository.CompanyRepository;
+import vn.wnav.jobhunter.repository.JobRepository;
 import vn.wnav.jobhunter.repository.UserRepository;
 
 @Service
 public class CompanyService {
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
+    private final JobRepository jobRepository;
+    private final JobService jobService;
 
-    public CompanyService(CompanyRepository companyRepository, UserRepository userRepository) {
+    public CompanyService(CompanyRepository companyRepository, UserRepository userRepository,
+            JobRepository jobRepository, JobService jobService) {
         this.companyRepository = companyRepository;
         this.userRepository = userRepository;
+        this.jobRepository = jobRepository;
+        this.jobService = jobService;
     }
 
     public Company handleSaveCompany(Company company) {
@@ -34,6 +41,12 @@ public class CompanyService {
         Optional<Company> comOptional = this.companyRepository.findById(id);
         if (comOptional.isPresent()) {
             Company com = comOptional.get();
+            // Fetch tất cả job liên quan đến công ty này
+            List<Job> jobs = this.jobRepository.findByCompany(com);
+            jobs.forEach(job -> {
+                // Sử dụng phương thức delete từ JobService để xóa các resume liên kết
+                this.jobService.delete(job.getId()); // gọi phương thức delete từ JobService
+            });
             // fetch all user belong to this company
             List<User> users = this.userRepository.findByCompany(com);
             this.userRepository.deleteAll(users);

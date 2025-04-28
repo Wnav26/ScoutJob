@@ -1,10 +1,12 @@
 package vn.wnav.jobhunter.service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import vn.wnav.jobhunter.domain.Company;
@@ -15,6 +17,7 @@ import vn.wnav.jobhunter.domain.response.job.ResCreateJobDTO;
 import vn.wnav.jobhunter.domain.response.job.ResUpdateJobDTO;
 import vn.wnav.jobhunter.repository.CompanyRepository;
 import vn.wnav.jobhunter.repository.JobRepository;
+import vn.wnav.jobhunter.repository.ResumeRepository;
 import vn.wnav.jobhunter.repository.SkillRepository;
 
 import org.springframework.data.domain.Page;
@@ -26,13 +29,14 @@ public class JobService {
     private final JobRepository jobRepository;
     private final SkillRepository skillRepository;
     private final CompanyRepository companyRepository;
+    private final ResumeRepository resumeRepository;
 
-    public JobService(JobRepository jobRepository,
-            SkillRepository skillRepository,
-            CompanyRepository companyRepository) {
+    public JobService(JobRepository jobRepository, SkillRepository skillRepository, CompanyRepository companyRepository,
+            ResumeRepository resumeRepository) {
         this.jobRepository = jobRepository;
         this.skillRepository = skillRepository;
         this.companyRepository = companyRepository;
+        this.resumeRepository = resumeRepository;
     }
 
     public Optional<Job> fetchJobById(long id) {
@@ -143,7 +147,22 @@ public class JobService {
     }
 
     public void delete(long id) {
-        this.jobRepository.deleteById(id);
+        Optional<Job> jobOptional = this.jobRepository.findById(id);
+
+        // Kiểm tra xem job có tồn tại không
+        if (jobOptional.isPresent()) {
+            Job currentJob = jobOptional.get();
+
+            // Xóa tất cả các resume liên kết với job
+            currentJob.getResumes().forEach(resume -> {
+                // Hủy liên kết với job trước khi xóa resume
+                resume.setJob(null);
+                this.resumeRepository.delete(resume); // Giả sử bạn có resumeRepository để xóa resume
+            });
+
+            // Sau khi đã xóa tất cả resumes, giờ mới xóa job
+            this.jobRepository.deleteById(id);
+        }
     }
 
     public ResultPaginationDTO fetchAll(Specification<Job> spec, Pageable pageable) {
@@ -163,5 +182,25 @@ public class JobService {
         rs.setResult(pageUser.getContent());
 
         return rs;
+    }
+
+    public Specification<Job> hasJobIdsIn(List<Long> jobIds) {
+        return (root, query, criteriaBuilder) -> {
+            if (jobIds != null && !jobIds.isEmpty()) {
+                return root.get("id").in(jobIds); // Lọc các job có id trong danh sách jobIds
+            }
+            return criteriaBuilder.conjunction(); // Nếu jobIds rỗng, trả về điều kiện luôn đúng
+        };
+    }
+
+    @Scheduled(cron = "0 0 0 * * ?")
+    public void updateJobStatus() {
+        Instant now = Instant.now();
+        List<Job> expiredJobs = jobRepository.findByEndDateBeforeAndActiveIsTrue(now);
+
+        expiredJobs.forEach(job -> job.setActive(false));
+
+        jobRepository.saveAll(expiredJobs);
+        System.out.println("Updated " + expiredJobs.size() + " jobs to inactive.");
     }
 }
