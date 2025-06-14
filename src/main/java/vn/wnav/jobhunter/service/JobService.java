@@ -193,7 +193,7 @@ public class JobService {
         };
     }
 
-    @Scheduled(cron = "0 0 0 * * ?")
+    @Scheduled(cron = "*/100 * * * * ?")
     public void updateJobStatus() {
         Instant now = Instant.now();
         List<Job> expiredJobs = jobRepository.findByEndDateBeforeAndActiveIsTrue(now);

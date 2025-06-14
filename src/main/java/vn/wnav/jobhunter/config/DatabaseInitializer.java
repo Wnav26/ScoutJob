@@ -85,6 +85,11 @@ public class DatabaseInitializer implements CommandLineRunner {
             arr.add(new Permission("Get a subscriber by id", "/api/v1/subscribers/{id}", "GET", "SUBSCRIBERS"));
             arr.add(new Permission("Get subscribers with pagination", "/api/v1/subscribers", "GET", "SUBSCRIBERS"));
 
+            arr.add(new Permission("Create a comment", "/api/v1/comments", "POST", "COMMENTS"));
+            arr.add(new Permission("Update a comment", "/api/v1/comments/{id}", "PUT", "COMMENTS"));
+            arr.add(new Permission("Delete a comment", "/api/v1/comments/{id}", "DELETE", "COMMENTS"));
+            arr.add(new Permission("Get a comment by job id", "/api/v1/comments/{id}", "GET", "COMMENTS"));
+
             arr.add(new Permission("Download a file", "/api/v1/files", "POST", "FILES"));
             arr.add(new Permission("Upload a file", "/api/v1/files", "GET", "FILES"));
 
