@@ -57,6 +57,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(
                         authz -> authz
                                 .requestMatchers(whiteList).permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/v1/companies/by-user-email").authenticated()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/companies/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/jobs/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/skills/**").permitAll()

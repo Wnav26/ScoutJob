@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,7 +41,6 @@ public class CompanyController {
 
     @PostMapping("/companies")
     @ApiMessage("create company")
-
     public ResponseEntity<Company> createNewCompany(@Valid @RequestBody Company postManCompany) {
         Company company = this.companyService.handleSaveCompany(postManCompany);
         return ResponseEntity.status(HttpStatus.CREATED).body(company);
@@ -48,7 +48,6 @@ public class CompanyController {
 
     @DeleteMapping("/companies/{id}")
     @ApiMessage("delete company")
-
     public ResponseEntity<Void> delete(@PathVariable("id") long id) throws IdInvalidException {
         Optional<Company> currentComp = this.companyService.getCompanyById(id);
         if (!currentComp.isPresent()) {
@@ -60,7 +59,6 @@ public class CompanyController {
 
     @GetMapping("/companies")
     @ApiMessage("fetch all company")
-
     public ResponseEntity<ResultPaginationDTO> getAllCompany(
             @Filter Specification<Company> spec, Pageable pageable) {
 
@@ -69,17 +67,25 @@ public class CompanyController {
 
     @GetMapping("/companies/{id}")
     @ApiMessage("fetch company")
-
     public ResponseEntity<Company> getCompanyById(@PathVariable("id") long id) {
         Optional<Company> company = this.companyService.getCompanyById(id);
         return ResponseEntity.ok(company.get());
     }
 
+    @GetMapping("/companies/by-user-email/{email}")
+    @ApiMessage("fetch company by user email")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Company> getCompanyByUserEmail(@PathVariable("email") String email) {
+        Company company = this.companyService.findCompanyByUserEmail(email);
+        if (company == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(company);
+    }
+
     @PutMapping("/companies")
     @ApiMessage("update company")
-
     public ResponseEntity<Company> updateCompany(@Valid @RequestBody Company postManCompany) {
-
         Company company = this.companyService.handleUpdateCompany(postManCompany);
         return ResponseEntity.ok(company);
     }

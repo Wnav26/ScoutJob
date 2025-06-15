@@ -74,6 +74,13 @@ public class CompanyService {
         return this.companyRepository.findById(id);
     }
 
+    public Company findCompanyByUserEmail(String email) {
+        User user = this.userRepository.findByEmail(email);
+        if (user != null) {
+            return user.getCompany(); // Giả sử User có trường company
+        }
+        return null;
+    }
     public Company handleUpdateCompany(Company c) {
         Optional<Company> companyOptional = this.companyRepository.findById(c.getId());
         if (companyOptional.isPresent()) {
